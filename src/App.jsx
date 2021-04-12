@@ -12,7 +12,7 @@ export default function App() {
 
   function addToCart(id, sku) {
     setCart((items) => {
-      const itemInCart = items.find((i), i.sku === sku);
+      const itemInCart = items.find((i) => i.sku === sku);
       if (itemInCart) {
         // return new array with the matching item replaced
         return items.map((i) => i.sku === sku ? {...i, quantity: i.quantity+ 1} : i);
@@ -32,7 +32,7 @@ export default function App() {
           <Route path="/" element={<h1>Welcome to the online shop</h1>} />
             <Route path="/:category" element={<Products />} />
             <Route path="/:category/:id" element={<Detail  addToCart={addToCart} />} />
-            <Route path="/cart" element={<Cart />} />
+            <Route path="/cart" element={<Cart cart={cart}/>} />
           </Routes>
         </main>
       </div>
