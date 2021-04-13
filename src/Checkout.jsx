@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
-
+import { saveShippingAddress } from './services/shippingService';
 const STATUS = {
   IDLE: "IDLE",
   SUBMITTED: "SUBMITTED",
@@ -15,10 +15,16 @@ const emptyAddress = {
   country: "",
 };
 
-export default function Checkout({ cart }) {
+export default function Checkout({ cart, dispatch }) {
   const [address, setAddress] = useState(emptyAddress);
   const [status, setStatus] = useState(STATUS.IDLE);
+  const [saveError, setSaveError] = useState(null);
+  const [touched, setTouched] = useState({});
 
+
+  //derived states
+  const errors = getErrors(address);
+  const isValid = Object.keys(errors).length === 0;
 
   function handleChange(e) {
     e.persist();
@@ -28,17 +34,51 @@ export default function Checkout({ cart }) {
   }
 
   function handleBlur(event) {
-    // TODO
+    setTouched((current) => {
+      return {...current, [event.target.id]: true};
+    });
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
     setStatus(STATUS.SUBMTTING);
+    if (isValid) {
+      try {
+        await saveShippingAddress(address);
+        dispatch({type: 'empty'});
+        setStatus(STATUS.COMPLETED);
+      } catch (e) {
+        setSaveError(e);
+      }} else {
+        setStatus(STATUS.SUBMITTED);
+      }
   }
 
+
+  function getErrors(address) {
+    const result = {};
+    if (!address.city) result.city = "City is required";
+    if (!address.country) result.country = "Country is required";
+    return result;
+  }
+
+  if (saveError) throw saveError;
+  if (status === STATUS.COMPLETED) {
+    return <h1>Thanks for shopping</h1>
+  }
   return (
     <>
       <h1>Shipping Info</h1>
+      {!isValid && status === STATUS.SUBMITTED && (
+      <div role="alert">
+          <p>fix those errors</p>
+          <ul>
+            {Object.keys(errors).map((key) => {
+              return <li key={key}>{errors[key]}</li>
+            })}
+          </ul>
+      </div>
+    )}
       <form onSubmit={handleSubmit}>
         <div>
           <label htmlFor="city">City</label>
@@ -50,6 +90,9 @@ export default function Checkout({ cart }) {
             onBlur={handleBlur}
             onChange={handleChange}
           />
+          <p role="alert">
+            {(touched.city || status === STATUS.SUBMITTED) && errors.city}
+          </p>
         </div>
 
         <div>
@@ -67,6 +110,9 @@ export default function Checkout({ cart }) {
             <option value="United Kingdom">United Kingdom</option>
             <option value="USA">USA</option>
           </select>
+          <p role="alert">
+            {(touched.country || status === STATUS.SUBMITTED) && errors.country}
+          </p>
         </div>
 
         <div>
